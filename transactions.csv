@@ -1,0 +1,41 @@
+transaction_id,date,time,department,vendor,category,amount,currency,payment_method,description
+TXN-1001,2026-09-01,09:15,IT,Microsoft,Software,1250,USD,Corporate Card,Annual software subscription
+TXN-1002,2026-09-01,10:20,HR,LinkedIn,Recruitment,850,USD,Corporate Card,Recruitment subscription
+TXN-1003,2026-09-01,11:05,Finance,Office Depot,Office Supplies,420,USD,Corporate Card,Office stationery
+TXN-1004,2026-09-01,14:30,Sales,Amazon Business,Office Supplies,680,USD,Corporate Card,Sales office supplies
+TXN-1005,2026-09-02,09:10,Marketing,Adobe,Software,920,USD,Corporate Card,Creative software subscription
+TXN-1006,2026-09-02,11:45,Operations,DHL,Logistics,1450,USD,Bank Transfer,Monthly logistics charges
+TXN-1007,2026-09-02,15:20,IT,AWS,Cloud Services,2100,USD,Bank Transfer,Cloud infrastructure
+TXN-1008,2026-09-03,10:00,HR,Indeed,Recruitment,560,USD,Corporate Card,Job posting charges
+TXN-1009,2026-09-03,13:40,Finance,Staples,Office Supplies,310,USD,Corporate Card,Finance stationery
+TXN-1010,2026-09-03,16:15,Sales,Salesforce,Software,1800,USD,Bank Transfer,CRM subscription
+TXN-1011,2026-09-04,09:25,Marketing,Google Ads,Advertising,2300,USD,Corporate Card,Digital advertising
+TXN-1012,2026-09-04,12:10,Operations,FedEx,Logistics,980,USD,Corporate Card,Shipping charges
+TXN-1013,2026-09-04,15:50,IT,Dell,Hardware,3200,USD,Bank Transfer,Laptop equipment
+TXN-1014,2026-09-05,10:35,HR,Coursera,Training,740,USD,Corporate Card,Employee training
+TXN-1015,2026-09-05,14:05,Finance,Oracle,Software,1650,USD,Bank Transfer,Finance software
+TXN-1016,2026-09-06,11:30,Sales,HubSpot,Software,1100,USD,Corporate Card,Marketing automation
+TXN-1017,2026-09-06,15:40,Marketing,Canva,Software,450,USD,Corporate Card,Design subscription
+TXN-1018,2026-09-07,09:50,Operations,UPS,Logistics,1250,USD,Corporate Card,Delivery charges
+TXN-1019,2026-09-07,13:25,IT,GitHub,Software,780,USD,Corporate Card,Developer tools
+TXN-1020,2026-09-07,16:45,Finance,Office Depot,Office Supplies,390,USD,Corporate Card,Finance supplies
+TXN-1021,2026-09-08,10:15,Sales,Salesforce,Software,1900,USD,Bank Transfer,CRM renewal
+TXN-1022,2026-09-08,14:20,Marketing,Meta Ads,Advertising,1750,USD,Corporate Card,Social media advertising
+TXN-1023,2026-09-08,16:10,HR,Udemy,Training,620,USD,Corporate Card,Employee training
+TXN-1024,2026-09-09,09:40,Operations,DHL,Logistics,1320,USD,Bank Transfer,Logistics charges
+TXN-1025,2026-09-09,11:55,IT,AWS,Cloud Services,2250,USD,Bank Transfer,Cloud infrastructure
+TXN-1026,2026-09-09,15:15,Finance,Oracle,Software,1700,USD,Bank Transfer,Financial software
+TXN-1027,2026-09-10,10:30,Sales,Amazon Business,Office Supplies,540,USD,Corporate Card,Sales supplies
+TXN-1028,2026-09-10,13:05,Marketing,Adobe,Software,890,USD,Corporate Card,Creative software
+TXN-1029,2026-09-10,16:30,HR,LinkedIn,Recruitment,900,USD,Corporate Card,Recruitment subscription
+TXN-1030,2026-09-11,09:20,Operations,FedEx,Logistics,1020,USD,Corporate Card,Shipping charges
+TXN-1031,2026-09-11,12:45,IT,Dell,Hardware,2950,USD,Bank Transfer,Computer equipment
+TXN-1032,2026-09-11,15:30,Finance,Staples,Office Supplies,350,USD,Corporate Card,Office supplies
+TXN-1033,2026-09-12,10:10,Sales,Salesforce,Software,1850,USD,Bank Transfer,CRM subscription
+TXN-1034,2026-09-12,14:35,Marketing,Google Ads,Advertising,2400,USD,Corporate Card,Advertising campaign
+TXN-1035,2026-09-12,16:20,HR,Coursera,Training,680,USD,Corporate Card,Training subscription
+TXN-1036,2026-09-13,23:48,Finance,Unknown Vendor,Consulting,18750,USD,Bank Transfer,Urgent consulting payment
+TXN-1037,2026-09-13,23:52,Finance,Unknown Vendor,Consulting,18750,USD,Bank Transfer,Urgent consulting payment
+TXN-1038,2026-09-14,02:15,IT,Unknown Vendor,Hardware,24500,USD,Bank Transfer,Emergency equipment purchase
+TXN-1039,2026-09-14,10:25,Sales,Amazon Business,Office Supplies,580,USD,Corporate Card,Sales supplies
+TXN-1040,2026-09-14,14:50,Marketing,Adobe,Software,910,USD,Corporate Card,Creative software
