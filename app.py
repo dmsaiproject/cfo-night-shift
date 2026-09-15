@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+from datetime import datetime
 
 import streamlit as st
 import pandas as pd
@@ -196,6 +197,121 @@ def analyse_transactions(df):
 
 
 # ---------------------------------------------------------
+# RUN WORKFLOW
+# ---------------------------------------------------------
+
+def run_cfo_workflow(df):
+
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=".csv"
+    ) as temp_file:
+
+        df.to_csv(
+            temp_file.name,
+            index=False
+        )
+
+        temp_file_path = temp_file.name
+
+    result = graph.invoke(
+        {
+            "file_path": temp_file_path
+        }
+    )
+
+    transactions = result["transactions"]
+    fraud_results = result["fraud_results"]
+    anomaly_results = result["anomaly_results"]
+
+    suspicious_count = int(
+        fraud_results["fraud_flag"].sum()
+    )
+
+    anomaly_count = int(
+        anomaly_results["anomaly_flag"].sum()
+    )
+
+    total_count = len(transactions)
+
+    st.session_state["result"] = result
+    st.session_state["demo_df"] = transactions
+    st.session_state["total_count"] = total_count
+    st.session_state["suspicious_count"] = suspicious_count
+    st.session_state["anomaly_count"] = anomaly_count
+
+    return result
+
+
+# ---------------------------------------------------------
+# SIMULATE NEW TRANSACTION
+# ---------------------------------------------------------
+
+def create_demo_transaction(df):
+
+    now = datetime.now()
+
+    existing_ids = (
+        df["transaction_id"].astype(str).tolist()
+        if "transaction_id" in df.columns
+        else []
+    )
+
+    transaction_id = f"LIVE-{len(existing_ids) + 1:04d}"
+
+    while transaction_id in existing_ids:
+        transaction_id = f"LIVE-{len(existing_ids) + 2:04d}"
+
+    new_transaction = {}
+
+    for column in df.columns:
+
+        new_transaction[column] = ""
+
+    if "transaction_id" in df.columns:
+        new_transaction["transaction_id"] = transaction_id
+
+    if "date" in df.columns:
+        new_transaction["date"] = now.strftime("%Y-%m-%d")
+
+    if "time" in df.columns:
+        # Deliberately off-hours for the demonstration.
+        new_transaction["time"] = "23:45:00"
+
+    if "department" in df.columns:
+        new_transaction["department"] = "Finance"
+
+    if "vendor" in df.columns:
+        new_transaction["vendor"] = "Unknown Vendor"
+
+    if "category" in df.columns:
+        new_transaction["category"] = "Consulting"
+
+    if "amount" in df.columns:
+        new_transaction["amount"] = 19500
+
+    if "currency" in df.columns:
+
+        if len(df) > 0 and str(df.iloc[0]["currency"]).strip():
+            new_transaction["currency"] = df.iloc[0]["currency"]
+        else:
+            new_transaction["currency"] = "USD"
+
+    if "payment_method" in df.columns:
+        new_transaction["payment_method"] = "Bank Transfer"
+
+    if "description" in df.columns:
+        new_transaction["description"] = (
+            "Urgent consulting payment"
+        )
+
+    return pd.DataFrame(
+        [new_transaction],
+        columns=df.columns
+    )
+
+
+# ---------------------------------------------------------
 # HEADER
 # ---------------------------------------------------------
 
@@ -206,8 +322,9 @@ st.subheader(
 )
 
 st.info(
-    "Upload a transaction CSV. The five-agent workflow will analyze "
-    "financial risks, generate CFO-level insight and create a board-ready report."
+    "Upload transaction data or simulate a new live transaction. "
+    "The five-agent workflow analyzes financial risks, generates "
+    "CFO-level insight and creates a board-ready report."
 )
 
 
@@ -246,10 +363,10 @@ Final financial decisions remain with authorized human personnel.
 
 
 # ---------------------------------------------------------
-# MAIN PROCESSING
+# INITIAL DATA
 # ---------------------------------------------------------
 
-if uploaded_file is None:
+if uploaded_file is None and "demo_df" not in st.session_state:
 
     st.warning(
         "Please upload a CSV transaction file from the sidebar to begin."
@@ -274,84 +391,127 @@ description
 
 else:
 
+    # -----------------------------------------------------
+    # LOAD INITIAL CSV
+    # -----------------------------------------------------
+
+    if uploaded_file is not None and "demo_df" not in st.session_state:
+
+        df = pd.read_csv(uploaded_file)
+
+        df.columns = df.columns.str.strip()
+
+        st.session_state["demo_df"] = df
+
+        st.session_state["source_file"] = uploaded_file.name
+
+    elif "demo_df" in st.session_state:
+
+        df = st.session_state["demo_df"].copy()
+
+    else:
+
+        df = pd.DataFrame()
+
+
+    # -----------------------------------------------------
+    # TRANSACTION PREVIEW
+    # -----------------------------------------------------
+
     st.success(
-        f"CSV uploaded successfully: **{uploaded_file.name}**"
+        f"Transactions loaded: **{len(df)}**"
     )
-
-    # -----------------------------------------------------
-    # READ UPLOADED CSV
-    # -----------------------------------------------------
-
-    df = pd.read_csv(uploaded_file)
-
-    df.columns = df.columns.str.strip()
 
     st.markdown("## 📊 Transaction Preview")
 
     st.dataframe(
-        df.head(10),
+        df.tail(10),
         use_container_width=True
     )
 
     st.markdown("---")
 
+
     # -----------------------------------------------------
-    # RUN AGENTIC WORKFLOW
+    # LIVE DEMO CONTROLS
     # -----------------------------------------------------
 
-    if st.button(
-        "⚡ Run CFO Night Shift",
-        type="primary",
-        use_container_width=True
-    ):
+    st.header("⚡ Live Transaction Simulation")
 
-        with st.spinner(
-            "Running the five-agent CFO Night Shift workflow..."
+    st.info(
+        "Use this button during a demonstration to simulate a "
+        "new high-value transaction arriving during the night."
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if st.button(
+            "🚨 Simulate New Transaction",
+            type="primary",
+            use_container_width=True
         ):
 
             try:
 
-                # Save uploaded file temporarily.
-                with tempfile.NamedTemporaryFile(
-                    delete=False,
-                    suffix=".csv"
-                ) as temp_file:
+                new_transaction = create_demo_transaction(
+                    df
+                )
 
-                    temp_file.write(
-                        uploaded_file.getvalue()
+                updated_df = pd.concat(
+                    [
+                        df,
+                        new_transaction
+                    ],
+                    ignore_index=True
+                )
+
+                st.session_state["demo_df"] = updated_df
+
+                st.success(
+                    "🚨 New transaction received!"
+                )
+
+                st.dataframe(
+                    new_transaction,
+                    use_container_width=True
+                )
+
+                with st.spinner(
+                    "AI agents are analyzing the new transaction..."
+                ):
+
+                    run_cfo_workflow(
+                        updated_df
                     )
 
-                    temp_file_path = temp_file.name
-
-                # Run existing LangGraph workflow.
-                result = graph.invoke(
-                    {
-                        "file_path": temp_file_path
-                    }
+                st.success(
+                    "✅ New transaction analyzed successfully."
                 )
 
-                transactions = result["transactions"]
-                fraud_results = result["fraud_results"]
-                anomaly_results = result["anomaly_results"]
+            except Exception as error:
 
-                suspicious_count = int(
-                    fraud_results["fraud_flag"].sum()
+                st.error(
+                    f"❌ Live transaction workflow error: {error}"
                 )
 
-                anomaly_count = int(
-                    anomaly_results["anomaly_flag"].sum()
-                )
+    with col2:
 
-                total_count = len(transactions)
+        if st.button(
+            "🔄 Run CFO Night Shift",
+            use_container_width=True
+        ):
 
-                # -------------------------------------------------
-                # SAVE RESULTS TO SESSION
-                # -------------------------------------------------
+            try:
 
-                st.session_state["result"] = result
-                st.session_state["total_count"] = total_count
-                st.session_state["suspicious_count"] = suspicious_count
-                st.session_state["anomaly_count"] = anomaly_count
+                with st.spinner(
+                    "Running the five-agent CFO Night Shift workflow..."
+                ):
+
+                    run_cfo_workflow(
+                        df
+                    )
 
                 st.success(
                     "✅ CFO Night Shift completed successfully."
@@ -380,6 +540,7 @@ if "result" in st.session_state:
     fraud_results = result["fraud_results"]
     anomaly_results = result["anomaly_results"]
 
+
     # -----------------------------------------------------
     # EXECUTIVE KPI
     # -----------------------------------------------------
@@ -391,22 +552,26 @@ if "result" in st.session_state:
     col1, col2, col3 = st.columns(3)
 
     with col1:
+
         st.metric(
             "Total Transactions",
             total_count
         )
 
     with col2:
+
         st.metric(
             "Suspicious Transactions",
             suspicious_count
         )
 
     with col3:
+
         st.metric(
             "Expense Anomalies",
             anomaly_count
         )
+
 
     # -----------------------------------------------------
     # RISK STATUS
@@ -436,6 +601,7 @@ if "result" in st.session_state:
             "🟢 LOW RISK — No significant risk detected."
         )
 
+
     # -----------------------------------------------------
     # ANALYSIS
     # -----------------------------------------------------
@@ -443,6 +609,7 @@ if "result" in st.session_state:
     analysed_df = analyse_transactions(
         transactions
     )
+
 
     # -----------------------------------------------------
     # SUSPICIOUS TRANSACTIONS
@@ -485,6 +652,7 @@ if "result" in st.session_state:
             "No suspicious transactions detected."
         )
 
+
     # -----------------------------------------------------
     # EXPENSE ANOMALIES
     # -----------------------------------------------------
@@ -524,6 +692,7 @@ if "result" in st.session_state:
             "No significant expense anomalies detected."
         )
 
+
     # -----------------------------------------------------
     # CFO AI INSIGHT
     # -----------------------------------------------------
@@ -535,6 +704,7 @@ if "result" in st.session_state:
     st.markdown(
         result["insight"]
     )
+
 
     # -----------------------------------------------------
     # CFO MANAGEMENT ACTION
@@ -548,6 +718,7 @@ if "result" in st.session_state:
             anomaly_count
         )
     )
+
 
     # -----------------------------------------------------
     # BOARD REPORT
@@ -581,6 +752,7 @@ if "result" in st.session_state:
         st.warning(
             "Board report file was not found."
         )
+
 
     # -----------------------------------------------------
     # HUMAN OVERSIGHT
