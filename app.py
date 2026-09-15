@@ -249,56 +249,166 @@ def run_cfo_workflow(df):
 
 def create_demo_transaction(df):
 
-    now = datetime.now()
-
     existing_ids = (
         df["transaction_id"].astype(str).tolist()
         if "transaction_id" in df.columns
         else []
     )
 
-    transaction_id = f"LIVE-{len(existing_ids) + 1:04d}"
+    transaction_number = len(existing_ids) + 1
+    transaction_id = f"LIVE-{transaction_number:04d}"
 
     while transaction_id in existing_ids:
-        transaction_id = f"LIVE-{len(existing_ids) + 2:04d}"
+        transaction_number += 1
+        transaction_id = f"LIVE-{transaction_number:04d}"
 
     new_transaction = {}
 
+    # Start with empty values for every existing column.
     for column in df.columns:
-
         new_transaction[column] = ""
+
+    # -----------------------------------------------------
+    # TRANSACTION ID
+    # -----------------------------------------------------
 
     if "transaction_id" in df.columns:
         new_transaction["transaction_id"] = transaction_id
 
+    # -----------------------------------------------------
+    # DATE
+    # -----------------------------------------------------
+
     if "date" in df.columns:
-        new_transaction["date"] = now.strftime("%Y-%m-%d")
+
+        if len(df) == 0:
+            new_transaction["date"] = datetime.now().strftime(
+                "%Y-%m-%d"
+            )
+
+        else:
+
+            sample_date = str(
+                df.iloc[0]["date"]
+            ).strip()
+
+            parsed_date = pd.to_datetime(
+                sample_date,
+                errors="coerce"
+            )
+
+            if pd.isna(parsed_date):
+                raise ValueError(
+                    "Unable to determine the date format from the existing CSV."
+                )
+
+            # Preserve common formats used by the source CSV.
+            if "/" in sample_date:
+
+                parts = sample_date.split("/")
+
+                if len(parts) == 3:
+
+                    # DD/MM/YYYY
+                    if len(parts[-1]) == 4:
+
+                        new_transaction["date"] = (
+                            parsed_date.strftime("%d/%m/%Y")
+                        )
+
+                    # YYYY/MM/DD
+                    else:
+
+                        new_transaction["date"] = (
+                            parsed_date.strftime("%Y/%m/%d")
+                        )
+
+                else:
+
+                    new_transaction["date"] = (
+                        parsed_date.strftime("%Y-%m-%d")
+                    )
+
+            elif "-" in sample_date:
+
+                # Most common ISO format.
+                new_transaction["date"] = (
+                    parsed_date.strftime("%Y-%m-%d")
+                )
+
+            else:
+
+                new_transaction["date"] = (
+                    parsed_date.strftime("%Y-%m-%d")
+                )
+
+    # -----------------------------------------------------
+    # TIME
+    # -----------------------------------------------------
 
     if "time" in df.columns:
+
         # Deliberately off-hours for the demonstration.
+        # This triggers the off-hours risk rule.
         new_transaction["time"] = "23:45:00"
+
+    # -----------------------------------------------------
+    # DEPARTMENT
+    # -----------------------------------------------------
 
     if "department" in df.columns:
         new_transaction["department"] = "Finance"
 
+    # -----------------------------------------------------
+    # VENDOR
+    # -----------------------------------------------------
+
     if "vendor" in df.columns:
         new_transaction["vendor"] = "Unknown Vendor"
+
+    # -----------------------------------------------------
+    # CATEGORY
+    # -----------------------------------------------------
 
     if "category" in df.columns:
         new_transaction["category"] = "Consulting"
 
+    # -----------------------------------------------------
+    # AMOUNT
+    # -----------------------------------------------------
+
     if "amount" in df.columns:
         new_transaction["amount"] = 19500
 
+    # -----------------------------------------------------
+    # CURRENCY
+    # -----------------------------------------------------
+
     if "currency" in df.columns:
 
-        if len(df) > 0 and str(df.iloc[0]["currency"]).strip():
-            new_transaction["currency"] = df.iloc[0]["currency"]
+        if (
+            len(df) > 0
+            and str(df.iloc[0]["currency"]).strip()
+        ):
+
+            new_transaction["currency"] = (
+                df.iloc[0]["currency"]
+            )
+
         else:
+
             new_transaction["currency"] = "USD"
+
+    # -----------------------------------------------------
+    # PAYMENT METHOD
+    # -----------------------------------------------------
 
     if "payment_method" in df.columns:
         new_transaction["payment_method"] = "Bank Transfer"
+
+    # -----------------------------------------------------
+    # DESCRIPTION
+    # -----------------------------------------------------
 
     if "description" in df.columns:
         new_transaction["description"] = (
