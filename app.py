@@ -121,8 +121,11 @@ def analyse_transactions(df):
         )
 
     if "date" in results.columns and "time" in results.columns:
+
         results["_datetime"] = pd.to_datetime(
-            results["date"].astype(str) + " " + results["time"].astype(str),
+            results["date"].astype(str)
+            + " "
+            + results["time"].astype(str),
             errors="coerce"
         )
 
@@ -133,29 +136,44 @@ def analyse_transactions(df):
         "description"
     ]
 
-    if all(column in results.columns for column in duplicate_columns):
+    if all(
+        column in results.columns
+        for column in duplicate_columns
+    ):
+
         results["duplicate_flag"] = results.duplicated(
             subset=duplicate_columns,
             keep=False
         )
+
     else:
+
         results["duplicate_flag"] = False
 
     if "amount" in results.columns:
-        results["large_amount_flag"] = results["amount"] >= 10000
+
+        results["large_amount_flag"] = (
+            results["amount"] >= 10000
+        )
+
     else:
+
         results["large_amount_flag"] = False
 
     if "_datetime" in results.columns:
+
         results["off_hours_flag"] = (
             (results["_datetime"].dt.hour < 6)
             |
             (results["_datetime"].dt.hour >= 22)
         )
+
     else:
+
         results["off_hours_flag"] = False
 
     if "vendor" in results.columns:
+
         results["unknown_vendor_flag"] = (
             results["vendor"]
             .astype(str)
@@ -163,7 +181,9 @@ def analyse_transactions(df):
             .str.lower()
             == "unknown vendor"
         )
+
     else:
+
         results["unknown_vendor_flag"] = False
 
     results["fraud_flag"] = (
@@ -176,7 +196,10 @@ def analyse_transactions(df):
         results["unknown_vendor_flag"]
     )
 
-    if "department" in results.columns and "amount" in results.columns:
+    if (
+        "department" in results.columns
+        and "amount" in results.columns
+    ):
 
         results["department_average"] = (
             results.groupby("department")["amount"]
@@ -197,7 +220,7 @@ def analyse_transactions(df):
 
 
 # ---------------------------------------------------------
-# RUN WORKFLOW
+# NORMAL CFO WORKFLOW
 # ---------------------------------------------------------
 
 def run_cfo_workflow(df):
@@ -244,181 +267,110 @@ def run_cfo_workflow(df):
 
 
 # ---------------------------------------------------------
-# SIMULATE NEW TRANSACTION
+# SAFE LIVE TRANSACTION SIMULATION
 # ---------------------------------------------------------
 
-def create_demo_transaction(df):
+def create_live_transaction():
 
-    existing_ids = (
-        df["transaction_id"].astype(str).tolist()
-        if "transaction_id" in df.columns
-        else []
-    )
+    now = datetime.now()
 
-    transaction_number = len(existing_ids) + 1
-    transaction_id = f"LIVE-{transaction_number:04d}"
-
-    while transaction_id in existing_ids:
-        transaction_number += 1
-        transaction_id = f"LIVE-{transaction_number:04d}"
-
-    new_transaction = {}
-
-    # Start with empty values for every existing column.
-    for column in df.columns:
-        new_transaction[column] = ""
-
-    # -----------------------------------------------------
-    # TRANSACTION ID
-    # -----------------------------------------------------
-
-    if "transaction_id" in df.columns:
-        new_transaction["transaction_id"] = transaction_id
-
-    # -----------------------------------------------------
-    # DATE
-    # -----------------------------------------------------
-
-    if "date" in df.columns:
-
-        if len(df) == 0:
-            new_transaction["date"] = datetime.now().strftime(
-                "%Y-%m-%d"
-            )
-
-        else:
-
-            sample_date = str(
-                df.iloc[0]["date"]
-            ).strip()
-
-            parsed_date = pd.to_datetime(
-                sample_date,
-                errors="coerce"
-            )
-
-            if pd.isna(parsed_date):
-                raise ValueError(
-                    "Unable to determine the date format from the existing CSV."
-                )
-
-            # Preserve common formats used by the source CSV.
-            if "/" in sample_date:
-
-                parts = sample_date.split("/")
-
-                if len(parts) == 3:
-
-                    # DD/MM/YYYY
-                    if len(parts[-1]) == 4:
-
-                        new_transaction["date"] = (
-                            parsed_date.strftime("%d/%m/%Y")
-                        )
-
-                    # YYYY/MM/DD
-                    else:
-
-                        new_transaction["date"] = (
-                            parsed_date.strftime("%Y/%m/%d")
-                        )
-
-                else:
-
-                    new_transaction["date"] = (
-                        parsed_date.strftime("%Y-%m-%d")
-                    )
-
-            elif "-" in sample_date:
-
-                # Most common ISO format.
-                new_transaction["date"] = (
-                    parsed_date.strftime("%Y-%m-%d")
-                )
-
-            else:
-
-                new_transaction["date"] = (
-                    parsed_date.strftime("%Y-%m-%d")
-                )
-
-    # -----------------------------------------------------
-    # TIME
-    # -----------------------------------------------------
-
-    if "time" in df.columns:
-
-        # Deliberately off-hours for the demonstration.
-        # This triggers the off-hours risk rule.
-        new_transaction["time"] = "23:45:00"
-
-    # -----------------------------------------------------
-    # DEPARTMENT
-    # -----------------------------------------------------
-
-    if "department" in df.columns:
-        new_transaction["department"] = "Finance"
-
-    # -----------------------------------------------------
-    # VENDOR
-    # -----------------------------------------------------
-
-    if "vendor" in df.columns:
-        new_transaction["vendor"] = "Unknown Vendor"
-
-    # -----------------------------------------------------
-    # CATEGORY
-    # -----------------------------------------------------
-
-    if "category" in df.columns:
-        new_transaction["category"] = "Consulting"
-
-    # -----------------------------------------------------
-    # AMOUNT
-    # -----------------------------------------------------
-
-    if "amount" in df.columns:
-        new_transaction["amount"] = 19500
-
-    # -----------------------------------------------------
-    # CURRENCY
-    # -----------------------------------------------------
-
-    if "currency" in df.columns:
-
-        if (
-            len(df) > 0
-            and str(df.iloc[0]["currency"]).strip()
-        ):
-
-            new_transaction["currency"] = (
-                df.iloc[0]["currency"]
-            )
-
-        else:
-
-            new_transaction["currency"] = "USD"
-
-    # -----------------------------------------------------
-    # PAYMENT METHOD
-    # -----------------------------------------------------
-
-    if "payment_method" in df.columns:
-        new_transaction["payment_method"] = "Bank Transfer"
-
-    # -----------------------------------------------------
-    # DESCRIPTION
-    # -----------------------------------------------------
-
-    if "description" in df.columns:
-        new_transaction["description"] = (
-            "Urgent consulting payment"
-        )
+    live_transaction = {
+        "transaction_id": f"LIVE-{now.strftime('%H%M%S')}",
+        "date": now.strftime("%Y-%m-%d"),
+        "time": "23:45:00",
+        "department": "Finance",
+        "vendor": "Unknown Vendor",
+        "category": "Consulting",
+        "amount": 19500,
+        "currency": "USD",
+        "payment_method": "Bank Transfer",
+        "description": "Urgent consulting payment"
+    }
 
     return pd.DataFrame(
-        [new_transaction],
-        columns=df.columns
+        [live_transaction]
     )
+
+
+def analyse_live_transaction(live_df):
+
+    result = live_df.copy()
+
+    result["amount"] = pd.to_numeric(
+        result["amount"],
+        errors="coerce"
+    )
+
+    result["large_amount_flag"] = (
+        result["amount"] >= 10000
+    )
+
+    result["unknown_vendor_flag"] = (
+        result["vendor"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        == "unknown vendor"
+    )
+
+    result["off_hours_flag"] = True
+
+    result["fraud_flag"] = (
+        result["large_amount_flag"]
+        |
+        result["unknown_vendor_flag"]
+        |
+        result["off_hours_flag"]
+    )
+
+    result["risk_level"] = "HIGH"
+
+    result["risk_reasons"] = (
+        "High-value transaction; "
+        "Unknown vendor; "
+        "Off-hours transaction"
+    )
+
+    return result
+
+
+def generate_live_cfo_insight(live_result):
+
+    row = live_result.iloc[0]
+
+    return f"""
+### 🚨 LIVE CFO RISK ALERT
+
+A new financial transaction has been detected requiring immediate human review.
+
+**Transaction:** {row["transaction_id"]}  
+**Department:** {row["department"]}  
+**Vendor:** {row["vendor"]}  
+**Amount:** {row["currency"]} {row["amount"]:,.2f}  
+**Payment Method:** {row["payment_method"]}  
+**Transaction Time:** {row["time"]}
+
+### Risk Indicators
+
+- 🔴 High-value transaction
+- 🔴 Unknown vendor
+- 🔴 Off-hours transaction
+
+### CFO Recommendation
+
+The transaction should **not be automatically rejected**.
+
+Finance should verify:
+
+1. Vendor identity
+2. Invoice
+3. Purchase order
+4. Business justification
+5. Approval authority
+6. Payment evidence
+
+**AI identifies and prioritizes the potential risk. Human personnel investigate and make the final financial decision.**
+"""
 
 
 # ---------------------------------------------------------
@@ -476,7 +428,10 @@ Final financial decisions remain with authorized human personnel.
 # INITIAL DATA
 # ---------------------------------------------------------
 
-if uploaded_file is None and "demo_df" not in st.session_state:
+if (
+    uploaded_file is None
+    and "demo_df" not in st.session_state
+):
 
     st.warning(
         "Please upload a CSV transaction file from the sidebar to begin."
@@ -505,7 +460,10 @@ else:
     # LOAD INITIAL CSV
     # -----------------------------------------------------
 
-    if uploaded_file is not None and "demo_df" not in st.session_state:
+    if (
+        uploaded_file is not None
+        and "demo_df" not in st.session_state
+    ):
 
         df = pd.read_csv(uploaded_file)
 
@@ -543,17 +501,23 @@ else:
 
 
     # -----------------------------------------------------
-    # LIVE DEMO CONTROLS
+    # LIVE TRANSACTION
     # -----------------------------------------------------
 
     st.header("⚡ Live Transaction Simulation")
 
     st.info(
-        "Use this button during a demonstration to simulate a "
-        "new high-value transaction arriving during the night."
+        "Simulate a new high-value transaction arriving during "
+        "the night. The live event is evaluated separately from "
+        "the historical CSV workflow."
     )
 
     col1, col2 = st.columns(2)
+
+
+    # -----------------------------------------------------
+    # SIMULATE LIVE TRANSACTION
+    # -----------------------------------------------------
 
     with col1:
 
@@ -565,46 +529,34 @@ else:
 
             try:
 
-                new_transaction = create_demo_transaction(
-                    df
-                )
-
-                updated_df = pd.concat(
-                    [
-                        df,
-                        new_transaction
-                    ],
-                    ignore_index=True
-                )
-
-                st.session_state["demo_df"] = updated_df
-
-                st.success(
-                    "🚨 New transaction received!"
-                )
-
-                st.dataframe(
-                    new_transaction,
-                    use_container_width=True
-                )
-
                 with st.spinner(
-                    "AI agents are analyzing the new transaction..."
+                    "Analyzing new transaction..."
                 ):
 
-                    run_cfo_workflow(
-                        updated_df
+                    live_df = create_live_transaction()
+
+                    live_result = analyse_live_transaction(
+                        live_df
                     )
 
+                    st.session_state[
+                        "live_transaction"
+                    ] = live_result
+
                 st.success(
-                    "✅ New transaction analyzed successfully."
+                    "🚨 New transaction received and analyzed."
                 )
 
             except Exception as error:
 
                 st.error(
-                    f"❌ Live transaction workflow error: {error}"
+                    f"❌ Live transaction error: {error}"
                 )
+
+
+    # -----------------------------------------------------
+    # NORMAL CFO WORKFLOW
+    # -----------------------------------------------------
 
     with col2:
 
@@ -635,7 +587,98 @@ else:
 
 
 # ---------------------------------------------------------
-# DISPLAY RESULTS
+# LIVE TRANSACTION RESULT
+# ---------------------------------------------------------
+
+if "live_transaction" in st.session_state:
+
+    live_result = st.session_state[
+        "live_transaction"
+    ]
+
+    st.markdown("---")
+
+    st.header(
+        "🚨 Live Transaction Alert"
+    )
+
+    st.error(
+        "🔴 HIGH RISK — Immediate Human Review Required"
+    )
+
+    st.dataframe(
+        live_result[
+            [
+                "transaction_id",
+                "date",
+                "time",
+                "department",
+                "vendor",
+                "category",
+                "amount",
+                "currency",
+                "payment_method",
+                "description"
+            ]
+        ],
+        use_container_width=True
+    )
+
+    st.markdown("---")
+
+    st.subheader(
+        "🔎 Risk Indicators"
+    )
+
+    indicator_col1, indicator_col2, indicator_col3 = st.columns(3)
+
+    with indicator_col1:
+
+        st.metric(
+            "Transaction Amount",
+            f'{live_result.iloc[0]["currency"]} '
+            f'{live_result.iloc[0]["amount"]:,.0f}'
+        )
+
+    with indicator_col2:
+
+        st.metric(
+            "Vendor Status",
+            "Unknown Vendor"
+        )
+
+    with indicator_col3:
+
+        st.metric(
+            "Transaction Timing",
+            "Off Hours"
+        )
+
+    st.markdown("---")
+
+    st.markdown(
+        generate_live_cfo_insight(
+            live_result
+        )
+    )
+
+    st.markdown("---")
+
+    st.warning(
+        """
+### ⚠️ Human Oversight
+
+This transaction has been **flagged for investigation**.
+
+The alert does not establish fraud, wrongdoing or financial liability.
+
+**AI detects and prioritizes. Humans investigate and decide.**
+"""
+    )
+
+
+# ---------------------------------------------------------
+# NORMAL WORKFLOW RESULTS
 # ---------------------------------------------------------
 
 if "result" in st.session_state:
@@ -657,7 +700,9 @@ if "result" in st.session_state:
 
     st.markdown("---")
 
-    st.header("📊 Executive Risk Overview")
+    st.header(
+        "📊 Executive Risk Overview"
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -689,7 +734,9 @@ if "result" in st.session_state:
 
     st.markdown("---")
 
-    st.header("🚨 Executive Risk Status")
+    st.header(
+        "🚨 Executive Risk Status"
+    )
 
     if suspicious_count > 0:
 
@@ -727,7 +774,9 @@ if "result" in st.session_state:
 
     st.markdown("---")
 
-    st.header("🔎 Suspicious Transactions")
+    st.header(
+        "🔎 Suspicious Transactions"
+    )
 
     suspicious_df = analysed_df[
         analysed_df["fraud_flag"]
@@ -752,7 +801,9 @@ if "result" in st.session_state:
         ]
 
         st.dataframe(
-            suspicious_df[available_columns],
+            suspicious_df[
+                available_columns
+            ],
             use_container_width=True
         )
 
@@ -769,7 +820,9 @@ if "result" in st.session_state:
 
     st.markdown("---")
 
-    st.header("📈 Expense Anomalies")
+    st.header(
+        "📈 Expense Anomalies"
+    )
 
     anomaly_df = analysed_df[
         analysed_df["anomaly_flag"]
@@ -792,7 +845,9 @@ if "result" in st.session_state:
         ]
 
         st.dataframe(
-            anomaly_df[available_columns],
+            anomaly_df[
+                available_columns
+            ],
             use_container_width=True
         )
 
@@ -809,7 +864,9 @@ if "result" in st.session_state:
 
     st.markdown("---")
 
-    st.header("🧠 CFO AI Insight")
+    st.header(
+        "🧠 CFO AI Insight"
+    )
 
     st.markdown(
         result["insight"]
@@ -836,7 +893,9 @@ if "result" in st.session_state:
 
     st.markdown("---")
 
-    st.header("📄 Board Report")
+    st.header(
+        "📄 Board Report"
+    )
 
     report_path = Path(
         result["report_path"]
@@ -874,9 +933,11 @@ if "result" in st.session_state:
         """
 ### ⚠️ Human Oversight
 
-Flagged transactions represent **potential financial risks** requiring human investigation.
+Flagged transactions represent **potential financial risks**
+requiring human investigation.
 
-Automated detection does not establish fraud, wrongdoing or financial liability.
+Automated detection does not establish fraud, wrongdoing or
+financial liability.
 
 **AI detects and recommends. Humans investigate and decide.**
 """
