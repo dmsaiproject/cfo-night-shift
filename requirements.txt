@@ -1,0 +1,5 @@
+pandas
+langgraph
+groq
+fpdf2
+streamlit
